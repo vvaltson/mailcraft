@@ -387,6 +387,9 @@ pub struct Services {
     /// on an attachment or on messages. An error means no drag started. Absent where the host
     /// can't (the browser, the tests, a platform without it yet).
     pub drag_files: Option<Box<dyn Fn(&[(String, Vec<u8>)]) -> Result<(), String>>>,
+    /// Desktop: whether a path is a file the host wrote for a drag out (or to open). A drag of ours
+    /// let go over the window again is not a file the owner dropped there.
+    pub staged: Option<Box<dyn Fn(&std::path::Path) -> bool>>,
     pub attachment_preview: Option<attachment_preview::Host>,
     /// Web: hand bytes to the browser as a download. An error means no download started.
     pub download: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,
@@ -5336,6 +5339,10 @@ impl MailApp {
         }
         #[cfg(not(target_arch = "wasm32"))]
         for f in ctx.input(|i| i.raw.dropped_files.clone()) {
+            // Not our own drag, let go over the window again.
+            if self.services.staged.as_ref().is_some_and(|staged| staged(f.path())) {
+                continue;
+            }
             // A file let go over the window is the owner's doing.
             self.by_hand = true;
             let path = f.path().to_string_lossy().to_string();
@@ -5803,7 +5810,7 @@ impl MailApp {
         agent_gate::show(self, &ctx);
         // While messages are dragged: the pointer for what is under it (#430).
         drag_pointer::apply(&ctx);
-        attachment_open::drag_message_out(self, &ctx);
+        attachment_open::drag_out(self, &ctx);
         self.by_hand = false;
         self.refusal();
         let title = format!("{} - MailCraft", self.title_stem());

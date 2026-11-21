@@ -88,6 +88,8 @@ mod logging;
 #[cfg(target_os = "macos")]
 mod menubar;
 mod opened_files;
+#[cfg(all(test, any(windows, target_os = "linux", target_os = "freebsd")))]
+mod opened_files_drag_tests;
 #[cfg(test)]
 mod opened_flow;
 mod own_keys;
@@ -330,7 +332,7 @@ fn keep_pictures() -> Option<std::sync::Arc<picture_cache::Cache>> {
 /// a folder of its own, so equal names don't meet) and gone when MailCraft quits.
 #[cfg(any(windows, target_os = "linux", target_os = "freebsd"))]
 fn written(opened: &opened_files::Opened, files: &[(String, Vec<u8>)]) -> Result<Vec<PathBuf>, String> {
-    files.iter().map(|(name, bytes)| opened.write(name, bytes)).collect()
+    files.iter().map(|(name, bytes)| opened.write_for_drag(name, bytes)).collect()
 }
 
 /// The attachments the owner opened in this run (`opened_files`), in this user's cache folder.
@@ -1737,6 +1739,7 @@ fn main() -> eframe::Result {
                     // The same writing as Open, then a drag of the file (#626).
                     if let (Some(opened), Some(drag)) = (OPENED.get(), clipboard::file_dragger(wayland_display)) {
                         services.drag_files = Some(Box::new(move |files| drag(&written(opened, files)?)));
+                        services.staged = Some(Box::new(|path| opened.holds(path)));
                     }
                     services.clipboard_keys = clipboard_keys;
                 }
@@ -1744,6 +1747,7 @@ fn main() -> eframe::Result {
                 #[cfg(windows)]
                 if let Some(opened) = OPENED.get() {
                     services.drag_files = Some(Box::new(move |files| written(opened, files).map(file_drag::queue)));
+                    services.staged = Some(Box::new(|path| opened.holds(path)));
                 }
                 services.update_start = update_start;
                 services.claim_mailbox =

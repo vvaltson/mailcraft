@@ -100,6 +100,25 @@ impl Opened {
     /// Write the file where it is opened from (the work of [`open`](Self::open) before the
     /// system is asked), and say where.
     pub fn write(&self, name: &str, bytes: &[u8]) -> Result<PathBuf, String> {
+        self.stage(name, bytes, true)
+    }
+
+    /// Write a file to be dragged out of the window (#626): the same folder, name and refusals,
+    /// but a copy the owner may change wherever it lands, and no wait for the disk while the
+    /// button is held.
+    pub fn write_for_drag(&self, name: &str, bytes: &[u8]) -> Result<PathBuf, String> {
+        self.stage(name, bytes, false)
+    }
+
+    /// Whether `path` is a file written here: a drag of ours that came back to the window is not
+    /// a file the owner dropped.
+    pub fn holds(&self, path: &Path) -> bool {
+        let base = fs::canonicalize(&self.base).unwrap_or_else(|_| self.base.clone());
+        let path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+        path.starts_with(base)
+    }
+
+    fn stage(&self, name: &str, bytes: &[u8], for_open: bool) -> Result<PathBuf, String> {
         if opening::verdict(name) == Verdict::Blocked {
             return Err(opening::blocked_message(name));
         }
@@ -113,11 +132,15 @@ impl Opened {
         private_dir(&folder).map_err(failed)?;
         let path = folder.join(opening::file_name(name));
         let mut file = new_file(&path).map_err(failed)?;
-        file.write_all(bytes).and_then(|()| file.sync_all()).map_err(failed)?;
+        file.write_all(bytes).map_err(failed)?;
+        if for_open {
+            file.sync_all().map_err(failed)?;
+        }
         drop(file);
         mailcraft_engine::mark::mark_from_internet(&path);
-        // A copy: what is changed in it is not the message's (Save As keeps a file).
-        if let Ok(meta) = fs::metadata(&path) {
+        // A copy: what is changed in it is not the message's (Save As keeps a file). Not for a
+        // drag: what lands in the owner's folder is theirs to change.
+        if for_open && let Ok(meta) = fs::metadata(&path) {
             let mut perms = meta.permissions();
             perms.set_readonly(true);
             let _ = fs::set_permissions(&path, perms);

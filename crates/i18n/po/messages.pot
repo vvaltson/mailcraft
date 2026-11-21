@@ -4224,6 +4224,11 @@ msgstr ""
 msgid "Drafts you haven't sent go to your Drafts on the server. Folders and messages that are only on this computer stay on this computer, in a folder called \"Kept from {account}\". Your folders in Favorites stay there."
 msgstr ""
 
+#. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "Drag out {n} messages at most at a time"
+msgstr ""
+
 #. ribbon
 #: crates/ui-egui/src/ribbon.rs
 msgid "Drop Cap"
@@ -13903,6 +13908,11 @@ msgid "That file isn't a key file: it is empty, or larger than one is."
 msgstr ""
 
 #. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "That is more than {mb} MB to drag out at once: save it with Save As instead"
+msgstr ""
+
+#. interface
 #: crates/ui-egui/src/reading/remote.rs
 msgid "That is not a domain"
 msgstr ""
@@ -14388,6 +14398,11 @@ msgid "The download was called off."
 msgstr ""
 
 #. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "The drag couldn't be started"
+msgstr ""
+
+#. interface
 #: crates/ui-egui/src/dialogs.rs
 msgid "The e-mail address of the person whose calendar you want to open"
 msgstr ""
@@ -14687,11 +14702,6 @@ msgstr ""
 #. interface
 #: crates/ui-egui/src/files.rs
 msgid "The message you were writing was saved to Drafts; a link opened a new one"
-msgstr ""
-
-#. interface
-#: crates/ui-egui/src/attachment_open.rs
-msgid "The messages are too large to drag out together: drag fewer of them"
 msgstr ""
 
 #. interface
@@ -20884,6 +20894,11 @@ msgstr ""
 #. interface
 #: crates/ui-egui/src/reading/invitation.rs
 msgid "{name} answered this invitation."
+msgstr ""
+
+#. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "{name} can't be dragged out: a file of this kind can carry a program or a script. Save it with Save As"
 msgstr ""
 
 #. android

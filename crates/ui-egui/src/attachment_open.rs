@@ -78,34 +78,37 @@ pub(crate) fn ui_command(app: &mut MailApp, id: &str, p: &Value) -> Option<Resul
 /// The most messages one drag out of the window carries, and the most bytes of them: a selection
 /// of thousands is not written out file by file.
 const MAX_DRAGGED: usize = 25;
-const MAX_DRAGGED_BYTES: usize = 128 << 20;
+const MAX_DRAGGED_MB: usize = 128;
+const MAX_DRAGGED_BYTES: usize = MAX_DRAGGED_MB << 20;
 
-/// The owner drags attachment `index` of `message` out of the window: it is written as Open
-/// writes it (the same refusals) and offered to whatever the pointer goes to.
-pub(crate) fn start_drag(app: &mut MailApp, message: Id, index: usize) {
-    if app.services.drag_files.is_none() {
-        return;
-    }
-    let started = target(app, &json!({"id": message, "index": index})).and_then(|(message, index, name)| {
-        if opening::verdict(&name) == Verdict::Blocked {
-            return Err(opening::blocked_message(&name));
-        }
-        let bytes = app.session.content(message, mailcraft_engine::Part::Attachment(index)).map_err(|e| e.to_string())?;
-        hand_over(app, vec![(opening::file_name(&name), bytes.to_vec())])
-    });
-    if let Err(error) = started {
-        app.status(error);
+/// An attachment grabbed in the reading pane. Like rows of the list it is carried inside the
+/// window by egui, and goes on as a file only once the pointer has left the window with the
+/// button down: a click that wobbles, or a drop back on the window, must not start anything.
+pub(crate) struct AttachmentDrag {
+    pub message: Id,
+    pub index: usize,
+}
+
+/// The owner presses on attachment `index` of `message` and moves.
+pub(crate) fn begin_drag(app: &MailApp, response: &egui::Response, message: Id, index: usize) {
+    if app.services.drag_files.is_some() {
+        response.dnd_set_drag_payload(AttachmentDrag { message, index });
     }
 }
 
-/// Messages dragged from the list reach the folders inside the window as before; once the pointer
-/// has left it with the button still down, they go on as files (what Save Message As writes, as
-/// `.eml`) and the drag is the system's.
-pub(crate) fn drag_message_out(app: &mut MailApp, ctx: &egui::Context) {
+/// What is dragged from the window (an attachment, or messages from the list) reaches things
+/// inside the window as before; once the pointer has left it with the button still down it goes on
+/// as files (an attachment as Open writes it, a message as Save Message As writes it for sharing)
+/// and the drag is the system's.
+pub(crate) fn drag_out(app: &mut MailApp, ctx: &egui::Context) {
     if app.services.drag_files.is_none() {
         return;
     }
-    let Some(drag) = egui::DragAndDrop::payload::<crate::mail_view::MessageDrag>(ctx) else { return };
+    let messages = egui::DragAndDrop::payload::<crate::mail_view::MessageDrag>(ctx);
+    let attachment = egui::DragAndDrop::payload::<AttachmentDrag>(ctx);
+    if messages.is_none() && attachment.is_none() {
+        return;
+    }
     // (The window's rect is read before `input`: a context call inside its closure can deadlock.)
     let window = ctx.content_rect();
     let outside = ctx.input(|i| i.pointer.primary_down() && i.pointer.latest_pos().is_none_or(|p| !window.contains(p)));
@@ -113,34 +116,80 @@ pub(crate) fn drag_message_out(app: &mut MailApp, ctx: &egui::Context) {
         return;
     }
     egui::DragAndDrop::clear_payload(ctx);
-    if let Err(error) = drag_messages(app, &drag.0) {
+    let handed = match (&messages, &attachment) {
+        (Some(drag), _) => drag_messages(app, &drag.0),
+        (None, Some(drag)) => drag_attachment(app, drag.message, drag.index),
+        (None, None) => Ok(()),
+    };
+    // The system's drag takes the button's release: for egui the press is over.
+    ctx.stop_dragging();
+    if let Err(error) = handed {
         app.status(error);
     }
 }
 
-/// `ids` as files for the system's drag, the one grabbed first leading. Nothing goes when one
-/// of them can't be written (the answer says which and why).
+/// Attachment `index` of `message` for the system's drag: refused unless it is a kind that opens
+/// without a question (what Open would ask about can't be asked in the middle of a drag).
+pub(crate) fn drag_attachment(app: &mut MailApp, message: Id, index: usize) -> Result<(), String> {
+    let (message, index, name) = target(app, &json!({"id": message, "index": index}))?;
+    if opening::verdict(&name) != Verdict::Open {
+        return Err(crate::i18n::fmt(
+            tl!("{name} can't be dragged out: a file of this kind can carry a program or a script. Save it with Save As"),
+            &[("name", &opening::file_name(&name).chars().take(60).collect::<String>())],
+        ));
+    }
+    let size = app.session.mailbox.message(message).and_then(|m| m.attachments.get(index)).map_or(0, |a| a.size());
+    if size > MAX_DRAGGED_BYTES {
+        return Err(too_much());
+    }
+    let bytes = app.session.content(message, mailcraft_engine::Part::Attachment(index)).map_err(|e| e.to_string())?;
+    hand_over(app, vec![(opening::file_name(&name), bytes.to_vec())])
+}
+
+/// `ids` as files for the system's drag, the one grabbed first leading. Nothing goes when there
+/// are too many or too much, or when one of them can't be written (the answer says which and why).
 pub(crate) fn drag_messages(app: &mut MailApp, ids: &[Id]) -> Result<(), String> {
+    if ids.len() > MAX_DRAGGED {
+        return Err(crate::i18n::fmt(tl!("Drag out {n} messages at most at a time"), &[("n", &MAX_DRAGGED.to_string())]));
+    }
+    // What the messages hold, by what the mailbox knows of them, before any is written out.
+    let held = |id: &Id| {
+        app.session.mailbox.message(*id).map_or(0, |m| {
+            m.attachments
+                .iter()
+                .fold(m.body.text.len().saturating_add(m.body.html.as_ref().map_or(0, String::len)), |n, a| n.saturating_add(a.size()))
+        })
+    };
+    if ids.iter().fold(0usize, |n, id| n.saturating_add(held(id))) > MAX_DRAGGED_BYTES {
+        return Err(too_much());
+    }
     let mut files = Vec::new();
     let mut total = 0usize;
-    for id in ids.iter().take(MAX_DRAGGED) {
-        let saved = app.execute("file.exportMessage", json!({"id": id}))?;
+    for id in ids {
+        let saved = app.execute("file.exportMessage", json!({"id": id, "share": true}))?;
         let name = saved.get("name").and_then(Value::as_str).unwrap_or("message.eml").to_string();
         let data = saved.get("data").and_then(Value::as_str).ok_or("no message to drag")?;
         let bytes = mailcraft_engine::cmd::base64_decode(data).map_err(|e| e.to_string())?;
         total = total.saturating_add(bytes.len());
         if total > MAX_DRAGGED_BYTES {
-            return Err(tl!("The messages are too large to drag out together: drag fewer of them").to_string());
+            return Err(too_much());
         }
         files.push((name, bytes));
     }
     hand_over(app, files)
 }
 
+fn too_much() -> String {
+    crate::i18n::fmt(tl!("That is more than {mb} MB to drag out at once: save it with Save As instead"), &[("mb", &MAX_DRAGGED_MB.to_string())])
+}
+
 /// `files` (name, content) to the host, which writes them and starts the system's drag.
 fn hand_over(app: &MailApp, files: Vec<(String, Vec<u8>)>) -> Result<(), String> {
     match &app.services.drag_files {
-        Some(drag) if !files.is_empty() => drag(&files),
+        Some(drag) if !files.is_empty() => drag(&files).map_err(|e| {
+            log::warn!("a drag out of the window didn't start: {e}");
+            tl!("The drag couldn't be started").to_string()
+        }),
         _ => Ok(()),
     }
 }

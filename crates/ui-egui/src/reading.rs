@@ -863,7 +863,7 @@ fn file_item(
         crate::attachment_preview::queue_click(app, ui.ctx(), m.id, index);
     }
     if resp.drag_started() {
-        crate::attachment_open::start_drag(app, m.id, index);
+        crate::attachment_open::begin_drag(app, &resp, m.id, index);
     }
     resp.context_menu(|ui| attachment_menu(ui, app, m.id, index));
     // The `▾`: a click, or Enter or Space while it has the keyboard, opens the same menu.

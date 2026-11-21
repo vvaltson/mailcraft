@@ -916,9 +916,16 @@ fn eml_attachment(s: &Session, id: Id) -> Result<Attachment, CmdError> {
     if not_downloaded(&m) {
         return Err(too_large_to_download(&m));
     }
-    // What is attached goes to other people: a draft's Bcc, the owner's own marks on the
-    // message (read, answered, flagged, categorised), and every header kept with it but those
-    // known to come from the sender or the servers on the way, stay here.
+    let (unmarked, opts) = unmarked(s, &m);
+    let bytes = mailcraft_mime_model::write(&unmarked, &opts);
+    Ok(Attachment::new(super::file::eml_name(&m), "message/rfc822", bytes))
+}
+
+/// `m` as it may go to other people (attached, dragged out of the window), and how to write it:
+/// a draft's Bcc, the owner's own marks on the message (read, answered, flagged, categorised),
+/// and every header kept with it but those known to come from the sender or the servers on the
+/// way, stay here.
+pub(super) fn unmarked(s: &Session, m: &Message) -> (Message, mailcraft_mime_model::WriteOptions) {
     let opts = mailcraft_mime_model::WriteOptions { include_bcc: false, offset_minutes: s.offset_at(m.date) };
     let unmarked = Message {
         read: false,
@@ -927,10 +934,9 @@ fn eml_attachment(s: &Session, id: Id) -> Result<Attachment, CmdError> {
         categories: Vec::new(),
         headers: m.all_headers().into_iter().filter(|(name, _)| goes_along(name)).collect(),
         header_block: mailcraft_model::HeaderBlock::default(),
-        ..Message::clone(&m)
+        ..m.clone()
     };
-    let bytes = mailcraft_mime_model::write(&unmarked, &opts);
-    Ok(Attachment::new(super::file::eml_name(&m), "message/rfc822", bytes))
+    (unmarked, opts)
 }
 
 #[path = "attach_item.rs"]

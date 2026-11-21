@@ -5069,6 +5069,11 @@ msgstr "მონახაზები"
 msgid "Drafts you haven't sent go to your Drafts on the server. Folders and messages that are only on this computer stay on this computer, in a folder called \"Kept from {account}\". Your folders in Favorites stay there."
 msgstr "გაუგზავნელი მონახაზები სერვერზე თქვენს მონახაზებში გადადის. საქაღალდეები და წერილები, რომლებიც მხოლოდ ამ კომპიუტერზეა, ამ კომპიუტერზევე რჩება, საქაღალდეში „Kept from {account}“. რჩეულებში არსებული თქვენი საქაღალდეები იქვე რჩება."
 
+#. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "Drag out {n} messages at most at a time"
+msgstr ""
+
 #. ribbon
 #: crates/ui-egui/src/ribbon.rs
 #, fuzzy
@@ -16696,6 +16701,11 @@ msgid "That file isn't a key file: it is empty, or larger than one is."
 msgstr "ეს ფაილი გასაღების ფაილი არ არის: ის ცარიელია ან ზედმეტად დიდი."
 
 #. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "That is more than {mb} MB to drag out at once: save it with Save As instead"
+msgstr ""
+
+#. interface
 #: crates/ui-egui/src/reading/remote.rs
 #, fuzzy
 msgid "That is not a domain"
@@ -17282,6 +17292,11 @@ msgid "The download was called off."
 msgstr "ჩამოტვირთვა გაუქმდა."
 
 #. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "The drag couldn't be started"
+msgstr ""
+
+#. interface
 #: crates/ui-egui/src/dialogs.rs
 #, fuzzy
 msgid "The e-mail address of the person whose calendar you want to open"
@@ -17642,11 +17657,6 @@ msgstr "თქვენ მიერ დაწერილ წერილს �
 #, fuzzy
 msgid "The message you were writing was saved to Drafts; a link opened a new one"
 msgstr "წერილი, რომელსაც წერდით, მონახაზებში შეინახა; ბმულმა ახალი გახსნა"
-
-#. interface
-#: crates/ui-egui/src/attachment_open.rs
-msgid "The messages are too large to drag out together: drag fewer of them"
-msgstr ""
 
 #. interface
 #: crates/ui-egui/src/backstage.rs
@@ -25054,6 +25064,11 @@ msgstr "{name} დაეთანხმა ამ შეხვედრას."
 #, fuzzy
 msgid "{name} answered this invitation."
 msgstr "{name} გამოეხმაურა ამ მოწვევას."
+
+#. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "{name} can't be dragged out: a file of this kind can carry a program or a script. Save it with Save As"
+msgstr ""
 
 #. android
 #: apps/mailcraft-android/app/src/main/kotlin/work/mailcraft/android/ShareLoad.kt
