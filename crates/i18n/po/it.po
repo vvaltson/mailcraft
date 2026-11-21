@@ -17692,6 +17692,11 @@ msgid "The message you were writing was saved to Drafts; a link opened a new one
 msgstr "Il messaggio che stavi scrivendo è stato salvato in Bozze; un link ne ha aperto uno nuovo"
 
 #. interface
+#: crates/ui-egui/src/attachment_open.rs
+msgid "The messages are too large to drag out together: drag fewer of them"
+msgstr ""
+
+#. interface
 #: crates/ui-egui/src/backstage.rs
 #, fuzzy
 msgid "The messages of the folder in view, as .mbox"

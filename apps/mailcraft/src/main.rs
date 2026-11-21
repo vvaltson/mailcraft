@@ -326,6 +326,13 @@ fn keep_pictures() -> Option<std::sync::Arc<picture_cache::Cache>> {
     Some(cache)
 }
 
+/// Files to be dragged out of the window (#626), written as an attachment to be opened is (each in
+/// a folder of its own, so equal names don't meet) and gone when MailCraft quits.
+#[cfg(any(windows, target_os = "linux", target_os = "freebsd"))]
+fn written(opened: &opened_files::Opened, files: &[(String, Vec<u8>)]) -> Result<Vec<PathBuf>, String> {
+    files.iter().map(|(name, bytes)| opened.write(name, bytes)).collect()
+}
+
 /// The attachments the owner opened in this run (`opened_files`), in this user's cache folder.
 static OPENED: std::sync::OnceLock<opened_files::Opened> = std::sync::OnceLock::new();
 
@@ -1729,14 +1736,14 @@ fn main() -> eframe::Result {
                     services.clipboard = clipboard::board(wayland_display);
                     // The same writing as Open, then a drag of the file (#626).
                     if let (Some(opened), Some(drag)) = (OPENED.get(), clipboard::file_dragger(wayland_display)) {
-                        services.drag_file = Some(Box::new(move |name, bytes| drag(&opened.write(name, bytes)?)));
+                        services.drag_files = Some(Box::new(move |files| drag(&written(opened, files)?)));
                     }
                     services.clipboard_keys = clipboard_keys;
                 }
                 // Windows: the file is written as Open writes it, and dragged once the frame is drawn (#626).
                 #[cfg(windows)]
                 if let Some(opened) = OPENED.get() {
-                    services.drag_file = Some(Box::new(move |name, bytes| opened.write(name, bytes).map(file_drag::queue)));
+                    services.drag_files = Some(Box::new(move |files| written(opened, files).map(file_drag::queue)));
                 }
                 services.update_start = update_start;
                 services.claim_mailbox =

@@ -111,6 +111,8 @@ pub mod dialogs;
 mod draft_continue_tests;
 #[cfg(test)]
 mod draft_selection_tests;
+#[cfg(test)]
+mod drag_out_tests;
 mod drag_pointer;
 #[cfg(test)]
 mod drag_pointer_tests;
@@ -379,12 +381,12 @@ pub struct Services {
     /// programs and scripts and asked about macros. An error means nothing was opened. Absent in
     /// the browser (the file is downloaded instead) and the tests.
     pub open_file: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,
-    /// Desktop: start dragging an attachment out of the window to other programs (the Files
-    /// window, a message being written elsewhere): the host writes it as `open_file` does, under
-    /// the name given, and hands the system a drag of that file. Only called while the owner's
-    /// button is down on the attachment. An error means no drag started. Absent where the host
+    /// Desktop: start dragging files out of the window to other programs (the file manager, a
+    /// message being written elsewhere): the host writes each as `open_file` does, under the name
+    /// given, and hands the system a drag of them. Only called while the owner's button is down
+    /// on an attachment or on messages. An error means no drag started. Absent where the host
     /// can't (the browser, the tests, a platform without it yet).
-    pub drag_file: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,
+    pub drag_files: Option<Box<dyn Fn(&[(String, Vec<u8>)]) -> Result<(), String>>>,
     pub attachment_preview: Option<attachment_preview::Host>,
     /// Web: hand bytes to the browser as a download. An error means no download started.
     pub download: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,

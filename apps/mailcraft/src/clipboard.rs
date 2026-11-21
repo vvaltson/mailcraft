@@ -54,12 +54,12 @@ pub fn wayland_display(window: &impl winit::raw_window_handle::HasDisplayHandle)
     }
 }
 
-/// Starts a drag of one file out of the window, under Wayland (the winit fork's `Clipboard`
+/// Starts a drag of files out of the window, under Wayland (the winit fork's `Clipboard`
 /// does it on its own data device): the system's drag for other platforms is not here yet.
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
-pub fn file_dragger(display: Option<std::ptr::NonNull<std::ffi::c_void>>) -> Option<Box<dyn Fn(&std::path::Path) -> Result<(), String>>> {
+pub fn file_dragger(display: Option<std::ptr::NonNull<std::ffi::c_void>>) -> Option<Box<dyn Fn(&[std::path::PathBuf]) -> Result<(), String>>> {
     let board = WaylandBoard::for_display(display?)?;
-    Some(Box::new(move |path| board.start_file_drag(&[path.to_path_buf()]).map_err(|e| e.to_string())))
+    Some(Box::new(move |paths| board.start_file_drag(paths).map_err(|e| e.to_string())))
 }
 
 #[derive(Default)]

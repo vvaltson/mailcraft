@@ -38,6 +38,11 @@ ignore = [
     # rPGP moves to rsa 0.10 / crypto-bigint 0.7.
     { id = "RUSTSEC-2023-0071", reason = "rsa Marvin attack: private-key timing; mailcraft-openpgp only verifies with public keys; remove or justify again before MailCraft signs or decrypts with a key it holds (#30 parts 5 and 6)" },
     { id = "RUSTSEC-2026-0387", reason = "crypto-bigint 0.5 timing on secret integers; mailcraft-openpgp only verifies with public keys; remove or justify again before MailCraft signs or decrypts with a key it holds (#30 parts 5 and 6)" },
+    # 2026-11-21: the `drag` crate (a file dragged out of the window on Windows, #626) lists GTK 0.18
+    # for its Linux build, so the lock file holds proc-macro-error through gtk's macros. MailCraft
+    # builds `drag` for Windows only; nothing of it is compiled or run elsewhere. Look again when
+    # `drag` moves to a newer gtk, or when a Linux drag of our own makes it unneeded.
+    { id = "RUSTSEC-2024-0370", reason = "proc-macro-error unmaintained; reached only through gtk 0.18, which `drag` lists for a Linux build MailCraft never makes (#626)" },
 ]
 
 [licenses]
