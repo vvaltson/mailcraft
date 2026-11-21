@@ -818,7 +818,7 @@ fn file_item(
     let drop_rect = Rect::from_min_max(pos2(r.max.x - crate::ribbon::DROP_W, r.min.y), r.max);
     let main_rect = Rect::from_min_max(r.min, pos2(drop_rect.min.x, r.max.y));
     let filed = m.id != 0;
-    let resp = ui.interact(main_rect, ui.make_persistent_id(("attachment", m.id, index)), Sense::click());
+    let resp = ui.interact(main_rect, ui.make_persistent_id(("attachment", m.id, index)), Sense::click_and_drag());
     let drop_sense = if filed { Sense::click() } else { Sense::hover() };
     let drop = ui.interact(drop_rect, ui.make_persistent_id(("attachmentMenu", m.id, index)), drop_sense);
     app.hit.add("attachment", attachment_key(m.id, index), main_rect);
@@ -861,6 +861,9 @@ fn file_item(
         let _ = app.run("mail.openAttachment", json!({"id": m.id, "index": index}));
     } else if resp.clicked() {
         crate::attachment_preview::queue_click(app, ui.ctx(), m.id, index);
+    }
+    if resp.drag_started() {
+        crate::attachment_open::start_drag(app, m.id, index);
     }
     resp.context_menu(|ui| attachment_menu(ui, app, m.id, index));
     // The `▾`: a click, or Enter or Space while it has the keyboard, opens the same menu.

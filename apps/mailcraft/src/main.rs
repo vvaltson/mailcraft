@@ -61,6 +61,8 @@ mod favorites_flow;
 #[cfg(test)]
 mod favorites_organisation_flow;
 mod file_dialogs;
+#[cfg(windows)]
+mod file_drag;
 mod file_launcher;
 #[cfg(windows)]
 mod recent_attachments;
@@ -243,6 +245,8 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.0.ui(ui);
         self.3.show(frame);
+        #[cfg(windows)]
+        file_drag::start(frame);
         open_pages(ui.ctx(), frame);
     }
     fn on_exit(&mut self) {
@@ -1723,7 +1727,16 @@ fn main() -> eframe::Result {
                 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
                 {
                     services.clipboard = clipboard::board(wayland_display);
+                    // The same writing as Open, then a drag of the file (#626).
+                    if let (Some(opened), Some(drag)) = (OPENED.get(), clipboard::file_dragger(wayland_display)) {
+                        services.drag_file = Some(Box::new(move |name, bytes| drag(&opened.write(name, bytes)?)));
+                    }
                     services.clipboard_keys = clipboard_keys;
+                }
+                // Windows: the file is written as Open writes it, and dragged once the frame is drawn (#626).
+                #[cfg(windows)]
+                if let Some(opened) = OPENED.get() {
+                    services.drag_file = Some(Box::new(move |name, bytes| opened.write(name, bytes).map(file_drag::queue)));
                 }
                 services.update_start = update_start;
                 services.claim_mailbox =

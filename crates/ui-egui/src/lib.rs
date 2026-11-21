@@ -379,6 +379,12 @@ pub struct Services {
     /// programs and scripts and asked about macros. An error means nothing was opened. Absent in
     /// the browser (the file is downloaded instead) and the tests.
     pub open_file: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,
+    /// Desktop: start dragging an attachment out of the window to other programs (the Files
+    /// window, a message being written elsewhere): the host writes it as `open_file` does, under
+    /// the name given, and hands the system a drag of that file. Only called while the owner's
+    /// button is down on the attachment. An error means no drag started. Absent where the host
+    /// can't (the browser, the tests, a platform without it yet).
+    pub drag_file: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,
     pub attachment_preview: Option<attachment_preview::Host>,
     /// Web: hand bytes to the browser as a download. An error means no download started.
     pub download: Option<Box<dyn Fn(&str, &[u8]) -> Result<(), String>>>,
@@ -5795,6 +5801,7 @@ impl MailApp {
         agent_gate::show(self, &ctx);
         // While messages are dragged: the pointer for what is under it (#430).
         drag_pointer::apply(&ctx);
+        attachment_open::drag_message_out(self, &ctx);
         self.by_hand = false;
         self.refusal();
         let title = format!("{} - MailCraft", self.title_stem());

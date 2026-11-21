@@ -122,6 +122,9 @@ keyring-core = "1"
 encoding_rs = { workspace = true }
 # Enumerate local fixed volumes without starting a shell or probing mapped drives.
 sysinfo = { version = "0.40.1", default-features = false, features = ["disk"] }
+# A file dragged out of the window (#626): OLE's drag, which needs native calls this program
+# forbids itself. MIT OR Apache-2.0. Windows only: its Linux build would bring in GTK.
+drag = "2.1"
 # Windows Credential Manager, for the credential store above.
 windows-native-keyring-store = "1.1"
 # Three registry values read, never written: where the `.msi` put the program (whether this copy
