@@ -122,6 +122,10 @@ mod unconfirmed_flow;
 mod update_flow;
 mod updater;
 mod wipe;
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+mod x11_drag;
+#[cfg(all(test, any(target_os = "linux", target_os = "freebsd")))]
+mod x11_drag_tests;
 
 use std::path::PathBuf;
 
