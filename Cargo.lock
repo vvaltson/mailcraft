@@ -1740,7 +1740,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dpi"
 version = "0.1.1"
-source = "git+https://github.com/UCS-Care-Group/winit?rev=1477b126a8c3d3d2add446c93492454ba833074d#1477b126a8c3d3d2add446c93492454ba833074d"
+source = "git+https://github.com/vvaltson/winit?rev=825135349ecfe409551dc56b052f74a4124b3317#825135349ecfe409551dc56b052f74a4124b3317"
 
 [[package]]
 name = "dpi"
@@ -4273,7 +4273,7 @@ version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "680998035259dcfcafe653688bf2aa6d3e2dc05e98be6ab46afb089dc84f1df8"
 dependencies = [
- "proc-macro-crate 3.5.0",
+ "proc-macro-crate 1.3.1",
  "proc-macro2",
  "quote",
  "syn 2.0.119",
@@ -8055,7 +8055,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 [[package]]
 name = "winit"
 version = "0.30.13"
-source = "git+https://github.com/UCS-Care-Group/winit?rev=1477b126a8c3d3d2add446c93492454ba833074d#1477b126a8c3d3d2add446c93492454ba833074d"
+source = "git+https://github.com/vvaltson/winit?rev=825135349ecfe409551dc56b052f74a4124b3317#825135349ecfe409551dc56b052f74a4124b3317"
 dependencies = [
  "ahash",
  "android-activity",
