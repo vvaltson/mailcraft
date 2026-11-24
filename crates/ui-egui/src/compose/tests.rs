@@ -963,3 +963,30 @@ fn an_html_signature_is_shown_as_it_goes_out_until_edited_as_text() {
     // Edited, it is the copy that goes out: there is no way back to the HTML.
     assert!(h.state().hit.rect("composeSignatureAsHtml", 0).is_none());
 }
+
+/// The pictures on the web in the owner's own HTML signature are shown while writing: asked for
+/// once through the picture host, as a message's are once allowed, and drawn when they come.
+#[test]
+fn an_html_signatures_pictures_on_the_web_are_shown_while_writing() {
+    let mut a = app();
+    let asked = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+    let seen = asked.clone();
+    a.services.pictures = Some(Box::new(move |url: String| {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut png = Vec::new();
+        image::RgbaImage::new(40, 30).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+        tx.send(Ok(png)).unwrap();
+        seen.lock().unwrap().push(url);
+        rx
+    }));
+    let html = r#"<p><b>Ada Lumen</b></p><img src="https://logo.example/lumen.png" alt="LOGO" width="40" height="30">"#;
+    a.execute("signature.html", json!({"name": "Standard", "html": html})).unwrap();
+    a.execute("mail.new", json!({"to": "maya@lumen.example", "body": "Hello"})).unwrap();
+    a.execute("compose.formatHtml", json!({})).unwrap();
+    let mut h = window(a);
+    h.run_steps(8);
+    assert!(h.state().hit.rect("composeSignature", 0).is_some());
+    assert_eq!(*asked.lock().unwrap(), ["https://logo.example/lumen.png"]);
+    // Drawn: the picture, not its stand-in.
+    assert_eq!(crate::reading::signature_drawn(&h.ctx, crate::reading::Place::Preview), Some((1, 0)));
+}

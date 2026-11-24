@@ -504,7 +504,7 @@ fn header(app: &mut MailApp, ui: &mut Ui, c: &Shown, focus_to: bool) {
 }
 
 /// An HTML signature as it goes out, under the owner's text in place of its simpler copy
-/// ([`editor::html_signature`]): read-only, its pictures on the web not fetched, with a way to
+/// ([`editor::html_signature`]): read-only, its pictures on the web shown (the owner's own), with a way to
 /// edit it as text instead, and back while that copy is unedited.
 fn signature(app: &mut MailApp, ui: &mut Ui) {
     let ctx = ui.ctx().clone();
@@ -546,7 +546,7 @@ fn signature(app: &mut MailApp, ui: &mut Ui) {
     let below = Rect::everything_below(top);
     ui.scope(|ui| {
         ui.set_clip_rect(ui.clip_rect().intersect(below));
-        crate::reading::show_plain_view(app, ui, &message, crate::reading::Place::Preview);
+        crate::reading::show_signature(app, ui, &message, crate::reading::Place::Preview);
     });
     let shown = Rect::from_min_max(pos2(ui.min_rect().min.x, top), pos2(ui.min_rect().max.x, ui.cursor().min.y));
     app.hit.add("composeSignature", 0, shown);

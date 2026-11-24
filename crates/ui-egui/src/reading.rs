@@ -470,10 +470,29 @@ fn let_go_of_quotes(app: &MailApp, ctx: &egui::Context) {
     });
 }
 
-/// `m` shown read-only through the display blocks, as at `place` ([`Place::Preview`]): its own
-/// pictures only, nothing from the web.
-pub(crate) fn show_plain_view(app: &mut MailApp, ui: &mut Ui, m: &Arc<Message>, place: Place) {
-    view::show(app, ui, m, place, Access::Blocked);
+/// `m`, the owner's own signature, shown read-only through the display blocks, as at `place`
+/// ([`Place::Preview`]): its own pictures, and its pictures on the web, which the owner put
+/// there, asked for as a message's are once allowed ([`remote::want`]).
+pub(crate) fn show_signature(app: &mut MailApp, ui: &mut Ui, m: &Arc<Message>, place: Place) {
+    let access = if !remote::available(app) {
+        Access::Unavailable
+    } else if m.id == remote::SIGNATURE {
+        Access::Allowed
+    } else {
+        Access::Blocked
+    };
+    if access == Access::Allowed {
+        let ctx = ui.ctx().clone();
+        let doc = view::doc_shown(&ctx, m, place, true, view::env_of(app, ui, place));
+        remote::want(app, &ctx, m, &doc);
+    }
+    view::show(app, ui, m, place, access);
+}
+
+/// How many pictures, and stand-ins for pictures, a signature shown at `place` has drawn, for tests.
+#[cfg(test)]
+pub(crate) fn signature_drawn(ctx: &egui::Context, place: Place) -> Option<(usize, usize)> {
+    view::kept_at(ctx, place, remote::SIGNATURE, |laid, _| (laid.stats.pictures, laid.stats.placeholders))
 }
 
 /// Pictures the host has brought are taken in, whatever is on screen ([`remote::tick`]), and the
